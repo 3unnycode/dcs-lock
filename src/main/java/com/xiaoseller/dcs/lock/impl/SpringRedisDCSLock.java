@@ -27,15 +27,18 @@ public class SpringRedisDCSLock implements DCSLock {
 		this.stringRedisTemplate = stringRedisTemplate;
 	}
 
+	@Override
 	public boolean tryLock() throws InterruptedException {
 		return tryLock(Contants.DEFAULT_ACQUIRE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
 	}
 
+	@Override
 	public boolean tryLock(long waitTime, TimeUnit unit) throws InterruptedException {
 		return tryLock(waitTime, unit, Contants.DEFAULT_EXPIRY_TIME_MILLIS);
 	}
 
 	@SuppressWarnings("resource")
+	@Override
 	public boolean tryLock(long waitTime, TimeUnit unit, long leaseTime) throws InterruptedException {
 		long timeout = unit.toMillis(waitTime);
 		long internalLockLeaseTime = unit.toMillis(leaseTime);
@@ -55,7 +58,8 @@ public class SpringRedisDCSLock implements DCSLock {
 		return false;
 	}
 
-	public void unLock() {
+	@Override
+	public boolean unlock() {
 		List<String> keys = new ArrayList<String>();
 		keys.add(lockKey);
 		// 采用lua脚本方式保证在多线程环境下也是原子操作
@@ -65,7 +69,8 @@ public class SpringRedisDCSLock implements DCSLock {
 				+ "if (redis.call('get', KEYS[1]) == ARGV[1]) then " + "redis.call('del', KEYS[1]); " + "return 1;"
 				+ "end; " + "return 0;");
 		try {
-			stringRedisTemplate.execute(script, keys, lockUUID.toString());
+			Long result = stringRedisTemplate.execute(script, keys, lockUUID.toString());
+			return result == null ? false : result >= 1;
 		} catch (Exception e) {
 			throw new DCSLockException(String.format("unlock fail, lockKey:{}", lockKey), e);
 		}

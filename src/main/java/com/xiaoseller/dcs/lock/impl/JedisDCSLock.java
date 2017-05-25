@@ -40,7 +40,7 @@ public class JedisDCSLock implements DCSLock {
 		long timeout = unit.toMillis(waitTime);
 		long internalLockLeaseTime = unit.toMillis(leaseTime);
 		while (timeout > 0) {
-			Secret newSecret = new Secret(lockUUID, internalLockLeaseTime);
+			Secret newSecret = new Secret(lockUUID, System.currentTimeMillis() + internalLockLeaseTime);
 			if (jedis.setnx(lockKey, newSecret.toString()) == 1) {
 				this.secret = newSecret;
 				return true;
@@ -61,16 +61,17 @@ public class JedisDCSLock implements DCSLock {
 	}
 
 	@Override
-	public void unLock() {
+	public boolean unlock() {
 		List<String> keys = new ArrayList<String>();
 		keys.add(lockKey);
 		List<String> args = new ArrayList<String>();
 		args.add(secret.toString());
 		// 采用lua脚本方式保证在多线程环境下也是原子操作
 		try {
-			jedis.eval("if (redis.call('exists', KEYS[1]) == 0) then " + "return -1; " + "end;"
+			Object result = jedis.eval("if (redis.call('exists', KEYS[1]) == 0) then " + "return -1; " + "end;"
 					+ "if (redis.call('get', KEYS[1]) == ARGV[1]) then " + "redis.call('del', KEYS[1]); " + "return 1;"
 					+ "end; " + "return 0;", keys, args);
+			return result == null ? false : ((Long)result) >= 1;
 		} catch (Exception e) {
 			throw new DCSLockException(String.format("unlock fail, lockKey:{}", lockKey), e);
 		}

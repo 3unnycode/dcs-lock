@@ -19,10 +19,10 @@ public class Secret implements Serializable {
 	 * @param uuid
 	 * @param expirationTime 过期时间 单位毫秒，例如，3000,3秒过期
 	 */
-	public Secret(UUID uuid, long expirationTime) {
+	public Secret(UUID uuid, long expireTime) {
 		super();
 		this.uuid = uuid;
-		this.expireTime = System.currentTimeMillis() + expireTime;
+		this.expireTime = expireTime;
 	}
 
 	public UUID getUuid() {
