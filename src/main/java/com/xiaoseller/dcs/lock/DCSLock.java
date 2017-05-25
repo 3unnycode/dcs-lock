@@ -10,5 +10,5 @@ public interface DCSLock {
 
 	boolean tryLock(long waitTime, TimeUnit unit, long leaseTime) throws InterruptedException;
 
-	long unLock();
+	void unLock();
 }
