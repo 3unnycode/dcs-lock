@@ -1,4 +1,4 @@
-package com.xiaoseller.dcs.lock;
+package com.xiaoseller.dcs.lock.impl;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
